@@ -1,0 +1,19 @@
+{
+	"folders": [
+		{
+			"path": "E:/NYU/Embedded/challenge"
+		},
+		{
+			"name": "Embedded Challenge 1",
+			"path": ".."
+		}
+	],
+	"settings": {
+		"github.copilot.enable": {
+			"*": false,
+			"plaintext": false,
+			"markdown": false,
+			"scminput": false
+		}
+	}
+}
