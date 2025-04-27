@@ -9,6 +9,7 @@ float X, Y, Z;
 #define SENSOR_RANGE 20
 
 int16_t inputData[DATA_SIZE];
+int i = 0;
 
 void setup() {
   Serial.begin(9600);
@@ -29,19 +30,27 @@ void loop() {
   // Serial.print("  Z: ");
   // Serial.println(Z);
 
-// capture 128
-
-// put inside the array inputData
-float raw = X;
-float scaled = raw / SENSOR_RANGE;
-if (scaled > 1.0) scaled = 1.0;
-if (scaled < -1.0) scaled = -1.0;
-int16_t q15_val = (int16_t)(scaled * 32767);
-inputData[0] = q15_val;
-
-  //run the FFT
-  ZeroFFT(inputData, DATA_SIZE);
 
 
-  delay(1000);
+  // put inside the array inputData
+
+  float raw = X;
+  float scaled = raw / SENSOR_RANGE; // scale to -1.0 to 1.0
+
+  // prevent overflow
+  if (scaled > 1.0) scaled = 1.0;
+  if (scaled < -1.0) scaled = -1.0;
+
+  // int16_t range from -32768 to 32767, convert from float to int16_t
+  int16_t q15_val = (int16_t)(scaled * 32767);
+
+  inputData[i] = q15_val;
+  i++;
+
+  if (i == 128){
+    ZeroFFT(inputData, DATA_SIZE);  //run the FFT
+    i = 0;
+  }
+    delay(1000);
+
 }
