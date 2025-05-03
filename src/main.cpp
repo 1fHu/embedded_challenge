@@ -3,8 +3,6 @@
 #include <arduinoFFT.h>
 
 
-
-
 // not larger than 128, power of 2
 #define SAMPLES 128
 
@@ -23,29 +21,37 @@ ArduinoFFT<double> FFT;
 bool endFlag = false;
 int i = 0;
 
+// button control
+const int buttonPin = PD4; // Right button connected to PD4
+bool lastButtonState = HIGH;  // Assume unpressed state initially (pull-up)
+bool currentButtonState = HIGH;
+bool buttonPressed = false;
+
 
 // function prototype
 double getOneSampleData(); 
 void performFFT(double* real, double* imag);
-void calculateEnergy(double& tremorEnergy, double& dyskinesiaEnergy,
-  double* testPtr);
+void calculateEnergy(double& tremorEnergy, double& dyskinesiaEnergy);
 void determineLED(const double& tremorEnergy, const double& dyskinesiaEnergy);
+void restart();
+void determineButton();
 
 
 void setup() {
-  // Serial.begin(9600);
-  // while (!Serial);  
-
   CircuitPlayground.begin();
   CircuitPlayground.clearPixels();
 
-  pinMode(13, OUTPUT);
+  pinMode(13, OUTPUT); // LED control
+
+  pinMode(buttonPin, INPUT_PULLUP); // Left button
+
 }
 
 void loop() {
+  // run repeatly
+  // here is data collecting
 
-
-
+  // enter data process when sample is reached
   if (!endFlag && i == SAMPLES) {
     // turn off LED shows 
     digitalWrite(13, LOW);
@@ -56,34 +62,27 @@ void loop() {
     // calculate energy in tremor and dyskinesia bands
     double tremorEnergy = 0;
     double dyskinesiaEnergy = 0; 
-    double testEnergy = 0;
-    double* testPtr = &testEnergy;
-    // calculateEnergy(tremorEnergy, dyskinesiaEnergy);
-    calculateEnergy(tremorEnergy, dyskinesiaEnergy, testPtr);
 
-    // Serial.print("Current Energy: ");
-    // Serial.println(testEnergy); 
-    // Serial.print("tremorEnergy Energy: ");
-    // Serial.println(tremorEnergy); 
-    // Serial.print("dyskinesiaEnergy Energy: ");
-    // Serial.println(dyskinesiaEnergy); 
+    calculateEnergy(tremorEnergy, dyskinesiaEnergy);
 
-    determineLED( tremorEnergy,  dyskinesiaEnergy);
+    determineLED(tremorEnergy,  dyskinesiaEnergy);
     endFlag = true;
   }
 
-  if (endFlag) return;
+  while (endFlag){
+    determineButton();
+  }
+
   // LED indicate
   digitalWrite(13, HIGH);
 
-  // normal code
+  // add one sample data into data array
   double mag = getOneSampleData();
-
-  // add into data array
   real[i] = mag;
   imag[i] = 0;
 
 
+  // record next time
   i++; 
   delay(23); // determines Sampling frequency
 
@@ -115,15 +114,9 @@ void performFFT(double* real, double* imag){
 }
 
 
-void calculateEnergy(double& tremorEnergy, double& dyskinesiaEnergy,
-                     double* testPtr){
+void calculateEnergy(double& tremorEnergy, double& dyskinesiaEnergy){
   for (int j = 1; j < SAMPLES / 2; j++){
     double freq = (j * SAMPLING_FREQ) / SAMPLES;
-    // if (testPtr != nullptr){
-    //   if (freq >= 3 && freq <= 7){
-    //     *testPtr += real[j];
-    //   }
-    // }
 
     if (freq >= 3 && freq <= 5) {
       tremorEnergy += real[j];
@@ -149,3 +142,26 @@ void determineLED(const double& tremorEnergy, const double& dyskinesiaEnergy){
   
 }
 
+void restart(){
+  i = 0;
+  CircuitPlayground.clearPixels();
+  endFlag = false;
+}
+
+
+void determineButton(){
+  currentButtonState = digitalRead(buttonPin);
+
+  if (lastButtonState == HIGH && currentButtonState == LOW) {
+    // Button just pressed
+    buttonPressed = true;
+  } 
+  else if (lastButtonState == LOW && currentButtonState == HIGH && buttonPressed) {
+    // Button released after being pressed
+    restart();
+    buttonPressed = false; // Reset flag
+
+  }
+
+  lastButtonState = currentButtonState;
+}
