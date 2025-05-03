@@ -3,7 +3,7 @@
 #include <arduinoFFT.h>
 
 
-float X, Y, Z;
+
 
 // not larger than 128, power of 2
 #define SAMPLES 128
@@ -11,14 +11,18 @@ float X, Y, Z;
 #define SENSOR_RANGE 20
 #define SAMPLING_FREQ 43.47 // Hz, determined by last delay in loop 
 
+
 // variables in FFT
+float X, Y, Z;
 double real[SAMPLES], imag[SAMPLES];
 
 // FFT itself
 ArduinoFFT<double> FFT;
 
+// iteration related
 bool endFlag = false;
 int i = 0;
+
 
 // function prototype
 double getOneSampleData(); 
@@ -27,18 +31,25 @@ void calculateEnergy(double& tremorEnergy, double& dyskinesiaEnergy,
   double* testPtr);
 void determineLED(const double& tremorEnergy, const double& dyskinesiaEnergy);
 
+
 void setup() {
   // Serial.begin(9600);
   // while (!Serial);  
-  CircuitPlayground.begin();
 
+  CircuitPlayground.begin();
   CircuitPlayground.clearPixels();
+
+  pinMode(13, OUTPUT);
 }
 
 void loop() {
 
 
+
   if (!endFlag && i == SAMPLES) {
+    // turn off LED shows 
+    digitalWrite(13, LOW);
+    delay(10);
 
     performFFT(real, imag);
 
@@ -62,7 +73,8 @@ void loop() {
   }
 
   if (endFlag) return;
-
+  // LED indicate
+  digitalWrite(13, HIGH);
 
   // normal code
   double mag = getOneSampleData();
@@ -70,6 +82,7 @@ void loop() {
   // add into data array
   real[i] = mag;
   imag[i] = 0;
+
 
   i++; 
   delay(23); // determines Sampling frequency
@@ -100,6 +113,7 @@ void performFFT(double* real, double* imag){
   FFT.compute(real, imag, SAMPLES, FFT_FORWARD);
   FFT.complexToMagnitude(real, imag, SAMPLES);
 }
+
 
 void calculateEnergy(double& tremorEnergy, double& dyskinesiaEnergy,
                      double* testPtr){
@@ -134,3 +148,4 @@ void determineLED(const double& tremorEnergy, const double& dyskinesiaEnergy){
   }
   
 }
+
