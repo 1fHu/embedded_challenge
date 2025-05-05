@@ -88,11 +88,12 @@ void loop() {
 
 }
 
+
+
 double getOneSampleData(){
   X = CircuitPlayground.motionX();
   Y = CircuitPlayground.motionY();
   Z = CircuitPlayground.motionZ();
-
 
   // normalize data in each axis 
   float scaled_x = constrain(X / SENSOR_RANGE, -1.0, 1.0);
@@ -114,6 +115,8 @@ void performFFT(double* real, double* imag){
 }
 
 
+
+// calculate energy in each frequency 
 void calculateEnergy(double& tremorEnergy, double& dyskinesiaEnergy){
   for (int j = 1; j < SAMPLES / 2; j++){
     double freq = (j * SAMPLING_FREQ) / SAMPLES;
@@ -126,21 +129,35 @@ void calculateEnergy(double& tremorEnergy, double& dyskinesiaEnergy){
   }
 }
 
-// not consider when same number
+
+// assign light according to intensity
+// blue for tremor, red for dyskinesia
 void determineLED(const double& tremorEnergy, const double& dyskinesiaEnergy){
   if (tremorEnergy < 2 && dyskinesiaEnergy < 2){
     return;
   }
-  else if (tremorEnergy > dyskinesiaEnergy)
-  { 
-    CircuitPlayground.setPixelColor(0, 0, 0, 255); // set it blue
-  }
-  else if (tremorEnergy < dyskinesiaEnergy)
-  {
-    CircuitPlayground.setPixelColor(5, 255, 0, 0); // set it red
+
+  // if tremeorEnergy is same, two lights both on
+  if (tremorEnergy == dyskinesiaEnergy){
+    CircuitPlayground.setPixelColor(0, 255, 0, 0); // red
+    CircuitPlayground.setPixelColor(5, 0, 0, 255); // blue 
+    return;
   }
   
+
+  for (size_t i = 0; i < 10; i++){
+    if (i <= 4 && tremorEnergy > dyskinesiaEnergy
+       &&  tremorEnergy >= (10 * i) ){ 
+      CircuitPlayground.setPixelColor(i, 0, 0, 255); // set it blue for tremor
+    }
+
+    else if ( i >= 5 && i <= 9 && tremorEnergy < dyskinesiaEnergy
+    && dyskinesiaEnergy >= (10 * (i - 5))){
+      CircuitPlayground.setPixelColor(i, 255, 0, 0); // set it red for dyskinesia
+    }
+  }
 }
+
 
 void restart(){
   i = 0;
@@ -149,6 +166,7 @@ void restart(){
 }
 
 
+// when button pressed, call restart
 void determineButton(){
   currentButtonState = digitalRead(buttonPin);
 
@@ -160,7 +178,6 @@ void determineButton(){
     // Button released after being pressed
     restart();
     buttonPressed = false; // Reset flag
-
   }
 
   lastButtonState = currentButtonState;
